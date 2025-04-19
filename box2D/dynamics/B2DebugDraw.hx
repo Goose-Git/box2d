@@ -27,7 +27,7 @@ import flash.display.Sprite;
 
 /**
  * Implement and register this class with a b2World to provide debug drawing of physics
- * entities in your game.
+ * entities in your game. 
  */
 class B2DebugDraw
 {
