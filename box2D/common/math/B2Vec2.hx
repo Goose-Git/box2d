@@ -23,6 +23,8 @@ package box2D.common.math;
  */
 class B2Vec2
 {
+	public static var zero:B2Vec2 = new B2Vec2(0,0);
+	
 	public function new(x_:Float = 0, y_:Float = 0):Void
 	{
 		x = x_;

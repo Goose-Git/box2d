@@ -27,6 +27,7 @@ import box2D.common.math.B2Mat22;
 import box2D.common.math.B2Math;
 import box2D.common.math.B2Transform;
 import box2D.common.math.B2Vec2;
+import box2D.dynamics.B2World;
 
 /**
  * Convex polygon. The vertices must be in CCW order for a right-handed
@@ -56,13 +57,83 @@ class B2PolygonShape extends B2Shape
 				m_vertices[i].setV(other2.m_vertices[i]);
 				m_normals[i].setV(other2.m_normals[i]);
 			}
+
+			// -----------
+			// This part was added for the unscaled verts
+			if ( other2.m_unscaledVertices != null ){
+				m_unscaledVertices = [];
+				for (i in 0...m_vertexCount){
+					m_unscaledVertices[i] = new B2Vec2();
+					m_unscaledVertices[i].setV(other2.m_unscaledVertices[i]);
+				}
+			}
+			// -----------
 		}
 	}
+
+	// =============================================
+	// I added this specially for Polygon Colliders
+	// =============================================
+	public function setFromPolygonCollider( vertices:Array <B2Vec2> ){			
+		m_vertexCount = vertices.length;		
+		reserve(m_vertexCount);
+
+		// Reserve the unscaled verticies
+		m_unscaledVertices = [];
+		for (i in 0...m_vertexCount)
+			m_unscaledVertices[i] = new B2Vec2();
+
+		// Copy vertices
+		for (i in 0...m_vertexCount){
+			m_unscaledVertices[i].x = vertices[i].x / B2World.UnitScale;
+			m_unscaledVertices[i].y = vertices[i].y / B2World.UnitScale;
+			m_vertices[i].x = m_unscaledVertices[i].x;
+			m_vertices[i].y = m_unscaledVertices[i].y;
+		}
+		
+		__computePolyNormals();
+
+		// Compute the polygon centroid
+		m_centroid = computeCentroid(m_vertices, m_vertexCount);
+	}
+
+	// =============================================
+	// I added this
+	// =============================================
+	function __computePolyNormals(){
+		for (i in 0...m_vertexCount)
+		{
+			var i1:Int = i;
+			var i2:Int = i + 1 < m_vertexCount ? i + 1 : 0;
+			var edge:B2Vec2 = B2Math.subtractVV(m_vertices[i2], m_vertices[i1]);
+			B2Settings.b2Assert(edge.lengthSquared() > B2Math.MIN_VALUE );
+			m_normals[i].setV(B2Math.crossVF(edge, 1.0));
+			m_normals[i].normalize();
+		}
+	}
+
+	// =============================================
+	// I added this
+	// =============================================
+	public function scale( scaleX:Float, scaleY:Float){
+		// This is just for polygon colliders. Added a second set of verticies - one for
+		// original unscaled points, and the final, scaled set of points so we can change
+		// the scale of a polygon shape easily.
+		for (i in 0...m_vertexCount)
+		{
+			m_vertices[i].x = m_unscaledVertices[i].x * scaleX;
+			m_vertices[i].y = m_unscaledVertices[i].y * scaleY;
+		}
+		__computePolyNormals();
+		m_centroid = computeCentroid(m_vertices, m_vertexCount);
+	}
+	
 
 	/**
 	 * Copy vertices. This assumes the vertices define a convex polygon.
 	 * It is assumed that the exterior is the the right of each edge.
 	 */
+	/*
 	public function setAsArray(vertices:Array<Dynamic>, vertexCount:Float = 0):Void
 	{
 		var v:Array<B2Vec2> = new Array<B2Vec2>();
@@ -78,12 +149,13 @@ class B2PolygonShape extends B2Shape
 		var polygonShape:B2PolygonShape = new B2PolygonShape();
 		polygonShape.setAsArray(vertices, vertexCount);
 		return polygonShape;
-	}
+	}*/
 
 	/**
 	 * Copy vertices. This assumes the vertices define a convex polygon.
 	 * It is assumed that the exterior is the the right of each edge.
 	 */
+	 /*
 	public function setAsVector(vertices:Array<B2Vec2>, vertexCount:Float = 0):Void
 	{
 		if (vertexCount == 0) vertexCount = vertices.length;
@@ -107,7 +179,7 @@ class B2PolygonShape extends B2Shape
 			var i1:Int = i;
 			var i2:Int = i + 1 < m_vertexCount ? i + 1 : 0;
 			var edge:B2Vec2 = B2Math.subtractVV(m_vertices[i2], m_vertices[i1]);
-			B2Settings.b2Assert(edge.lengthSquared() > B2Math.MIN_VALUE /* * Number.MIN_VALUE*/);
+			B2Settings.b2Assert(edge.lengthSquared() > B2Math.MIN_VALUE );
 			m_normals[i].setV(B2Math.crossVF(edge, 1.0));
 			m_normals[i].normalize();
 		}
@@ -121,7 +193,7 @@ class B2PolygonShape extends B2Shape
 		var polygonShape:B2PolygonShape = new B2PolygonShape();
 		polygonShape.setAsVector(vertices, vertexCount);
 		return polygonShape;
-	}
+	}*/
 
 	/**
 	 * Build vertices to represent an axis-aligned box.
@@ -141,6 +213,33 @@ class B2PolygonShape extends B2Shape
 		m_normals[2].set(0.0, 1.0);
 		m_normals[3].set(-1.0, 0.0);
 		m_centroid.setZero();
+	}
+
+	// =============================================
+	// Special function I added for GameStudio
+	// Colliders
+	// =============================================
+	public function setFromBoxCollider( x:Float, y:Float, w:Float, h:Float, scaleX:Float, scaleY:Float){
+		// Convert units
+		x /= B2World.UnitScale;
+		y /= B2World.UnitScale;
+		w /= B2World.UnitScale;
+		h /= B2World.UnitScale;
+		x *= scaleX;
+		y *= scaleY;
+		w *= scaleX;
+		h *= scaleY;
+
+		m_vertices[0].set( x, y);
+		m_vertices[1].set( x+w, y);
+		m_vertices[2].set( x+w,  y+h);
+		m_vertices[3].set( x,  y+h);
+		m_normals[0].set(0.0, -1.0);
+		m_normals[1].set(1.0, 0.0);
+		m_normals[2].set(0.0, 1.0);
+		m_normals[3].set(-1.0, 0.0);
+
+		m_centroid.set( x+(w/2), y+(h/2));
 	}
 
 	public static function asBox(hx:Float, hy:Float):B2PolygonShape
@@ -742,6 +841,11 @@ class B2PolygonShape extends B2Shape
 	public var m_normals:Array<B2Vec2>;
 
 	public var m_vertexCount:Int = 0;
+
+	// This is a bit of a hack because we can't scale shapes without scaling their
+	// actual verticies, so I put the scaling stuff directly into the Shape class here.
+	// This could probably be better done in a wrapper class maybe?
+	public var m_unscaledVertices:Array <B2Vec2> = null;
 
 	/**
 	 * Computes the centroid of the given polygon
