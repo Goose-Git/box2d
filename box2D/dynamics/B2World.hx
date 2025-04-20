@@ -1682,4 +1682,7 @@ class B2World
 	// m_flags
 	public static var e_newFixture:Int = 0x0001;
 	public static var e_locked:Int = 0x0002;
+
+	// We addded this 
+	public static var UnitScale:Float = 1.0;
 }

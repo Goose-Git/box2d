@@ -218,6 +218,10 @@ class B2DebugDraw
 	 */
 	public function drawSolidPolygon(vertices:Array<B2Vec2>, vertexCount:Int, color:B2Color):Void
 	{
+		// Find someway of doing this without needing to include our own renderer
+		throw("do this a different way!");
+
+		/*
 		#if (openfl || flash || nme)
 		m_sprite.graphics.lineStyle(m_lineThickness, color.color, m_alpha);
 		m_sprite.graphics.moveTo(vertices[0].x * m_drawScale, vertices[0].y * m_drawScale);
@@ -228,7 +232,7 @@ class B2DebugDraw
 		}
 		m_sprite.graphics.lineTo(vertices[0].x * m_drawScale, vertices[0].y * m_drawScale);
 		m_sprite.graphics.endFill();
-		#end
+		#end*/
 	}
 
 	/**
